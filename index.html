@@ -2,70 +2,59 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>Tamil OTT Discovery</title>
+    <title>Tamil Discovery</title>
     <style>
-        body { background: #141414; color: white; font-family: Arial, sans-serif; margin: 0; padding: 20px; overflow-x: hidden; }
-        h1 { color: #E50914; font-size: 35px; margin-bottom: 5px; }
-        .row-title { font-size: 20px; margin-bottom: 10px; color: #aaa; }
-        .posters { display: flex; gap: 15px; overflow-x: auto; padding: 20px 0; }
-        .movie-card { 
-            min-width: 180px; border: 3px solid transparent; border-radius: 8px; 
-            outline: none; cursor: pointer; transition: 0.3s;
-        }
+        body { background: #141414; color: white; font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        h1 { color: #E50914; }
+        .posters { display: flex; gap: 15px; overflow-x: auto; padding: 20px; }
+        .movie-card { min-width: 180px; border: 3px solid transparent; cursor: pointer; outline: none; }
         .movie-card:focus { transform: scale(1.1); border-color: white; }
-        .movie-card img { width: 100%; border-radius: 5px; display: block; }
+        .movie-card img { width: 100%; border-radius: 8px; }
     </style>
 </head>
 <body>
     <h1>TAMIL DISCOVERY</h1>
-    <div class="row-title">Trending Tamil Movies</div>
-    <div id="movie-list" class="posters"></div>
+    <div id="movie-list" class="posters">Loading movies...</div>
 
     <script>
         const API_KEY = '34a9daea5fdead58bfaac3eeffdf7be7'; 
         const container = document.getElementById('movie-list');
 
-        async function getTamilMovies() {
+        async function loadMovies() {
             try {
-                // Fetching from the correct TMDB URL
                 const url = `https://themoviedb.org{API_KEY}&with_original_language=ta&sort_by=popularity.desc`;
-                const response = await fetch(url);
-                const data = await response.json();
+                const resp = await fetch(url);
+                const data = await resp.json();
                 
-                if (data.results) {
-                    data.results.forEach(movie => {
-                        if (movie.poster_path) {
-                            const card = document.createElement('div');
-                            card.className = 'movie-card';
-                            card.tabIndex = "0"; 
-                            // Using the correct image path
-                            card.innerHTML = `<img src="https://tmdb.org{movie.poster_path}">`;
-                            
-                            card.onclick = () => openIMDb(movie.id);
-                            card.onkeydown = (e) => { if (e.key === 'Enter') openIMDb(movie.id); };
+                container.innerHTML = ''; // Clear the "Loading" text
 
-                            container.appendChild(card);
-                        }
-                    });
-                    // Focus the first movie so you can use arrow keys immediately
-                    setTimeout(() => document.querySelector('.movie-card').focus(), 500);
-                }
-            } catch (error) {
-                console.error("Error fetching movies:", error);
+                data.results.forEach(movie => {
+                    if (movie.poster_path) {
+                        const card = document.createElement('div');
+                        card.className = 'movie-card';
+                        card.tabIndex = "0"; 
+                        card.innerHTML = `<img src="https://tmdb.org{movie.poster_path}">`;
+                        
+                        // Click or Enter to go to IMDb
+                        const goToIMDb = async () => {
+                            const res = await fetch(`https://themoviedb.org{movie.id}?api_key=${API_KEY}&append_to_response=external_ids`);
+                            const details = await res.json();
+                            window.open(`https://imdb.com{details.external_ids.imdb_id}/`, '_blank');
+                        };
+
+                        card.onclick = goToIMDb;
+                        card.onkeydown = (e) => { if (e.key === 'Enter') goToIMDb(); };
+                        
+                        container.appendChild(card);
+                    }
+                });
+                // Focus first movie for TV remote
+                document.querySelector('.movie-card').focus();
+            } catch (err) {
+                container.innerHTML = "Error loading movies. Check API key.";
             }
         }
-
-        async function openIMDb(movieId) {
-            const res = await fetch(`https://themoviedb.org{movieId}?api_key=${API_KEY}&append_to_response=external_ids`);
-            const details = await res.json();
-            if(details.external_ids && details.external_ids.imdb_id) {
-                window.open(`https://imdb.com{details.external_ids.imdb_id}/`, '_blank');
-            } else {
-                alert("IMDb link not found.");
-            }
-        }
-
-        getTamilMovies();
+        loadMovies();
     </script>
 </body>
 </html>

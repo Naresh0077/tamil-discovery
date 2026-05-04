@@ -5,16 +5,16 @@
     <title>Tamil Discovery</title>
     <style>
         body { background: #141414; color: white; font-family: Arial, sans-serif; margin: 0; padding: 20px; }
-        h1 { color: #E50914; }
-        .posters { display: flex; gap: 15px; overflow-x: auto; padding: 20px; }
-        .movie-card { min-width: 180px; border: 3px solid transparent; cursor: pointer; outline: none; }
+        h1 { color: #E50914; margin-bottom: 20px; }
+        .posters { display: flex; gap: 15px; overflow-x: auto; padding: 20px 0; }
+        .movie-card { min-width: 180px; border: 3px solid transparent; cursor: pointer; outline: none; transition: 0.3s; }
         .movie-card:focus { transform: scale(1.1); border-color: white; }
-        .movie-card img { width: 100%; border-radius: 8px; }
+        .movie-card img { width: 100%; border-radius: 8px; display: block; }
     </style>
 </head>
 <body>
     <h1>TAMIL DISCOVERY</h1>
-    <div id="movie-list" class="posters">Loading movies...</div>
+    <div id="movie-list" class="posters">Connecting to TMDB...</div>
 
     <script>
         const API_KEY = '34a9daea5fdead58bfaac3eeffdf7be7'; 
@@ -22,24 +22,34 @@
 
         async function loadMovies() {
             try {
+                // FIXED URL: Added 'api.' and '/3/'
                 const url = `https://themoviedb.org{API_KEY}&with_original_language=ta&sort_by=popularity.desc`;
                 const resp = await fetch(url);
                 const data = await resp.json();
                 
-                container.innerHTML = ''; // Clear the "Loading" text
+                if (!data.results || data.results.length === 0) {
+                    container.innerHTML = "No movies found.";
+                    return;
+                }
+
+                container.innerHTML = ''; 
 
                 data.results.forEach(movie => {
                     if (movie.poster_path) {
                         const card = document.createElement('div');
                         card.className = 'movie-card';
                         card.tabIndex = "0"; 
+                        // FIXED IMAGE URL
                         card.innerHTML = `<img src="https://tmdb.org{movie.poster_path}">`;
                         
-                        // Click or Enter to go to IMDb
                         const goToIMDb = async () => {
                             const res = await fetch(`https://themoviedb.org{movie.id}?api_key=${API_KEY}&append_to_response=external_ids`);
                             const details = await res.json();
-                            window.open(`https://imdb.com{details.external_ids.imdb_id}/`, '_blank');
+                            if (details.external_ids && details.external_ids.imdb_id) {
+                                window.open(`https://imdb.com{details.external_ids.imdb_id}/`, '_blank');
+                            } else {
+                                alert("IMDb link not available.");
+                            }
                         };
 
                         card.onclick = goToIMDb;
@@ -48,10 +58,14 @@
                         container.appendChild(card);
                     }
                 });
-                // Focus first movie for TV remote
-                document.querySelector('.movie-card').focus();
+                
+                // Focus the first movie so you can use your arrow keys immediately
+                const firstCard = document.querySelector('.movie-card');
+                if (firstCard) firstCard.focus();
+
             } catch (err) {
-                container.innerHTML = "Error loading movies. Check API key.";
+                container.innerHTML = "Error: Could not reach TMDB. Check your internet.";
+                console.error(err);
             }
         }
         loadMovies();

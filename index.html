@@ -5,11 +5,13 @@
     <title>Tamil Discovery</title>
     <style>
         body { background: #141414; color: white; font-family: Arial, sans-serif; margin: 0; padding: 20px; }
-        h1 { color: #E50914; margin-bottom: 20px; }
-        .posters { display: flex; gap: 15px; overflow-x: auto; padding: 20px 0; }
-        .movie-card { min-width: 180px; border: 3px solid transparent; cursor: pointer; outline: none; transition: 0.3s; }
-        .movie-card:focus { transform: scale(1.1); border-color: white; }
-        .movie-card img { width: 100%; border-radius: 8px; display: block; }
+        h1 { color: #E50914; margin-bottom: 20px; font-weight: bold; }
+        .posters { display: flex; gap: 15px; overflow-x: auto; padding: 20px 0; scrollbar-width: none; }
+        .posters::-webkit-scrollbar { display: none; }
+        .movie-card { min-width: 200px; border: 3px solid transparent; cursor: pointer; outline: none; transition: 0.3s; }
+        /* Focus effect for Google TV Remote */
+        .movie-card:focus { transform: scale(1.1); border-color: white; z-index: 10; }
+        .movie-card img { width: 100%; border-radius: 8px; display: block; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
@@ -22,8 +24,9 @@
 
         async function loadMovies() {
             try {
-                // FIXED URL: Added 'api.' and '/3/'
+                // FIXED: Full correct URL path with /3/ and discover
                 const url = `https://themoviedb.org{API_KEY}&with_original_language=ta&sort_by=popularity.desc`;
+                
                 const resp = await fetch(url);
                 const data = await resp.json();
                 
@@ -39,16 +42,17 @@
                         const card = document.createElement('div');
                         card.className = 'movie-card';
                         card.tabIndex = "0"; 
-                        // FIXED IMAGE URL
+                        // FIXED: Corrected the image host to image.tmdb.org
                         card.innerHTML = `<img src="https://tmdb.org{movie.poster_path}">`;
                         
                         const goToIMDb = async () => {
+                            // FIXED: Added /3/ and movie ID path
                             const res = await fetch(`https://themoviedb.org{movie.id}?api_key=${API_KEY}&append_to_response=external_ids`);
                             const details = await res.json();
                             if (details.external_ids && details.external_ids.imdb_id) {
                                 window.open(`https://imdb.com{details.external_ids.imdb_id}/`, '_blank');
                             } else {
-                                alert("IMDb link not available.");
+                                alert("IMDb link not available for this movie.");
                             }
                         };
 
@@ -59,12 +63,14 @@
                     }
                 });
                 
-                // Focus the first movie so you can use your arrow keys immediately
-                const firstCard = document.querySelector('.movie-card');
-                if (firstCard) firstCard.focus();
+                // Set focus so TV remote works immediately
+                setTimeout(() => {
+                    const firstCard = document.querySelector('.movie-card');
+                    if (firstCard) firstCard.focus();
+                }, 500);
 
             } catch (err) {
-                container.innerHTML = "Error: Could not reach TMDB. Check your internet.";
+                container.innerHTML = "Error: Could not reach TMDB. Try using a VPN or different network.";
                 console.error(err);
             }
         }
